@@ -19,7 +19,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:4200', '*'],
+    'allowed_origins' => ['http://localhost:4200',
+    'https://hiring-sprint-2025-three.vercel.app',
+    '*'],
 
     'allowed_origins_patterns' => [],
 

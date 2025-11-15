@@ -16,9 +16,11 @@ class InspectionController extends Controller
      * Combined workflow used by the Angular UI when pick-up and return
      * photos are sent together in a single request.
      */
+
     public function store(Request $request)
-    {
-        $data = $request->validate([
+{
+    try {
+ $data = $request->validate([
             'vehicle_id' => 'nullable|integer',
             'rental_id' => 'nullable|integer',
             'pickup_images' => 'nullable|array',
@@ -42,6 +44,7 @@ class InspectionController extends Controller
             'pickup',
             $request->input('pickup_angles', [])
         );
+
         $returnData = $this->persistImages(
             $request->file('return_images', []),
             $inspection,
@@ -55,7 +58,61 @@ class InspectionController extends Controller
             $returnData['full_paths'],
             $returnData['records']
         );
+    } catch (\Throwable $e) {
+        \Log::error('Inspection store error', [
+            'message' => $e->getMessage(),
+            'file'    => $e->getFile(),
+            'line'    => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'message' => 'Image analysis failed. Please try again later.',
+            'error'   => $e->getMessage(), // ممكن تشيلها في الـ production
+        ], 500);
     }
+}
+
+
+    // public function store(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'vehicle_id' => 'nullable|integer',
+    //         'rental_id' => 'nullable|integer',
+    //         'pickup_images' => 'nullable|array',
+    //         'pickup_images.*' => 'mimes:jpeg,png,jpg,webp,heic|max:8192',
+    //         'pickup_angles' => 'array',
+    //         'pickup_angles.*' => 'nullable|string|max:32',
+    //         'return_images' => 'required|array|min:1',
+    //         'return_images.*' => 'mimes:jpeg,png,jpg,webp,heic|max:8192',
+    //         'return_angles' => 'array',
+    //         'return_angles.*' => 'nullable|string|max:32',
+    //     ]);
+
+    //     $inspection = Inspection::create([
+    //         'vehicle_id' => $data['vehicle_id'] ?? null,
+    //         'rental_id' => $data['rental_id'] ?? null,
+    //     ]);
+
+    //     $pickupData = $this->persistImages(
+    //         $request->file('pickup_images', []),
+    //         $inspection,
+    //         'pickup',
+    //         $request->input('pickup_angles', [])
+    //     );
+    //     $returnData = $this->persistImages(
+    //         $request->file('return_images', []),
+    //         $inspection,
+    //         'return',
+    //         $request->input('return_angles', [])
+    //     );
+
+    //     return $this->analyzeReturnImages(
+    //         $inspection,
+    //         $pickupData['full_paths'],
+    //         $returnData['full_paths'],
+    //         $returnData['records']
+    //     );
+    // }
 
     /**
      * Step 1: persist a pick-up baseline and return the inspection id.

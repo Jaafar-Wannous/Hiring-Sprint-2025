@@ -1,0 +1,47 @@
+# Global artifacts
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Environment / secrets
+.env
+.env.*
+*.env
+temp.json
+
+# Python / AI service
+__pycache__/
+*.pyc
+ai-service/.venv/
+ai-service/venv/
+ai-service/output/
+ai-service/data/
+ai-service/runs/
+ai-service/*.pt
+
+# Node / Angular
+node_modules/
+front-end/.angular/cache
+front-end/dist/
+front-end/tmp/
+front-end/out-tsc/
+front-end/bazel-out/
+
+# Laravel / PHP
+back-end/vendor/
+back-end/storage/
+back-end/public/storage
+back-end/bootstrap/cache/*.php
+back-end/.phpunit.result.cache
+
+# IDE / tooling
+.idea/
+.vscode/
+/.fleet
+/.nova
+
+# Generated weights or large binaries
+*.pt
+*.onnx
+*.ckpt

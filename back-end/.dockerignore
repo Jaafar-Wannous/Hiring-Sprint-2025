@@ -1,0 +1,11 @@
+vendor/
+node_modules/
+.git/
+.idea/
+.vscode/
+.env
+storage/logs/*.log
+storage/debugbar/
+tests/
+*.sql
+*.tar

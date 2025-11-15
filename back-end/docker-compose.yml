@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ../front-end
+      dockerfile: Dockerfile
+    image: car-inspection-frontend:latest
+    container_name: frontend
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: car-inspection-backend:latest
+    container_name: backend
+    ports:
+      - "8000:80"
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_DATABASE: car_inspection
+      DB_USERNAME: jaafar
+      DB_PASSWORD: wannous
+      YOLO_URL: "http://ai-service:8000/detect"
+    depends_on:
+      - db
+      - ai-service
+
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    image: car-inspection-ai:latest
+    container_name: ai-service
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+    environment:
+      YOLO_MODEL_PATH: /app/runs/detect/cardd2/weights/best.pt
+
+  db:
+    image: mysql:8.0
+    container_name: db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: car_inspection
+      MYSQL_USER: jaafar
+      MYSQL_PASSWORD: wannous
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dbdata:

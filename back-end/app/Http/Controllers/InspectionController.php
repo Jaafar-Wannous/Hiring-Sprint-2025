@@ -225,7 +225,14 @@ class InspectionController extends Controller
     private function callYolo(array $absolutePaths): array
     {
         $yoloUrl = env('YOLO_URL', 'http://ai-service:8000/detect');
-        $response = Http::asMultipart()->post($yoloUrl, $this->prepareFilesForYOLO($absolutePaths));
+        $timeout = (int) env('YOLO_TIMEOUT', 90);
+        $connectTimeout = (int) env('YOLO_CONNECT_TIMEOUT', 15);
+
+        $response = Http::timeout($timeout)
+            ->connectTimeout($connectTimeout)
+            ->retry(2, 500)
+            ->asMultipart()
+            ->post($yoloUrl, $this->prepareFilesForYOLO($absolutePaths));
 
         if ($response->failed()) {
             throw new HttpResponseException(response()->json([

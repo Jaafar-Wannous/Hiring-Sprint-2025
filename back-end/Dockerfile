@@ -1,29 +1,38 @@
-FROM composer:2 AS vendor
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+FROM php:8.2-fpm
 
-FROM php:8.2-apache
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    sqlite3 \
+    libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_sqlite gd mbstring xml
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libzip-dev zip unzip \
-    && docker-php-ext-install pdo_mysql \
-    && a2enmod rewrite \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+
+# Copy project
 COPY . .
-COPY --from=vendor /app/vendor /var/www/html/vendor
-COPY --from=vendor /app/composer.lock /var/www/html/composer.lock
-COPY --from=vendor /app/composer.json /var/www/html/composer.json
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-ENV APP_ENV=production \
-    APP_DEBUG=false
+# Laravel storage link
+RUN php artisan storage:link || true
 
-CMD ["apache2-foreground"]
+# Cache config
+RUN php artisan config:cache
+
+# Expose Render port
+ENV PORT=8080
+EXPOSE ${PORT}
+
+# Start Laravel
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]

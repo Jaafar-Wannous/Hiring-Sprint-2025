@@ -1,4 +1,4 @@
 export const environment = {
-  production: false,
-  apiUrl: 'http://127.0.0.1:8000/api',
+  production: true,
+  apiUrl: 'https://hiring-sprint-2025-1-saex.onrender.com/api',
 };

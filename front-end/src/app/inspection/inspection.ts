@@ -488,7 +488,18 @@ export class InspectionComponent implements OnDestroy {
     for (const damage of detail.damages ?? []) {
       const targetIdx = indexById.get((damage as any).image_id);
       if (targetIdx === undefined) continue;
-      grouped[targetIdx].push(damage);
+      grouped[targetIdx].push({
+        label: (damage as any).label ?? (damage as any).type ?? 'Damage',
+        severity: (damage as any).severity ?? 'unknown',
+        cost: (damage as any).estimated_cost ?? (damage as any).cost ?? 0,
+        x: (damage as any).x ?? 0,
+        y: (damage as any).y ?? 0,
+        width: (damage as any).width ?? 0,
+        height: (damage as any).height ?? 0,
+        confidence: (damage as any).confidence,
+        area_ratio: (damage as any).area_ratio,
+        repair_details: (damage as any).repair_details,
+      });
     }
     return grouped;
   }

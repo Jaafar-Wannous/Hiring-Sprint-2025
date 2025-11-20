@@ -257,6 +257,13 @@ export class InspectionComponent implements OnDestroy {
     }
     this.loading = true;
     this.clearStatus();
+    this.pickupSessionId = undefined;
+    this.existingInspectionSummary = undefined;
+    this.resetResults();
+    this.pickupFiles = [];
+    this.pickupPreviews = [];
+    this.returnFiles = [];
+    this.returnPreviews = [];
 
     this.http.get<InspectionDetail>(this.buildApiUrl(`/inspections/${parsedId}`)).subscribe({
       next: (detail) => {

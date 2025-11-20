@@ -41,6 +41,7 @@ interface InspectionDetail {
   id: number;
   pickup_images: Array<{ id: number; path: string; angle?: string | null }>;
   return_images: Array<{ id: number; path: string; angle?: string | null }>;
+  damages?: DamageResult[];
   summary?: {
     total_damages: number;
     estimated_cost: number;
@@ -74,6 +75,7 @@ export class InspectionComponent implements OnDestroy {
     returnCount: 0,
   };
   private readonly apiBase = environment.apiUrl.replace(/\/$/, '');
+  private readonly assetBase = environment.apiUrl.replace(/\/api$/, '');
 
   loading = false;
   dragActive = {
@@ -270,6 +272,15 @@ export class InspectionComponent implements OnDestroy {
         this.pickupSessionId = detail.id;
         this.inspectionId = detail.id;
         this.existingInspectionSummary = detail;
+        this.pickupPreviews = detail.pickup_images.map((img) => this.resolveImageUrl(img.path));
+        this.returnPreviews = detail.return_images.map((img) => this.resolveImageUrl(img.path));
+        this.newDamagesPerImage = this.groupDamagesByReturnImage(detail);
+        this.updateSummary({
+          total_new_damages: detail.summary?.total_damages,
+          total_estimated_cost: detail.summary?.estimated_cost,
+          pickup_image_count: detail.pickup_images.length,
+          return_image_count: detail.return_images.length,
+        });
         this.statusMessage = `Inspection #${detail.id} loaded. Upload return photos and run the analysis.`;
         this.loading = false;
       },
@@ -456,6 +467,30 @@ export class InspectionComponent implements OnDestroy {
       pickupCount: metadata?.pickup_image_count ?? this.pickupPreviews.length,
       returnCount: metadata?.return_image_count ?? this.returnPreviews.length,
     };
+  }
+
+  private resolveImageUrl(path: string): string {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const normalized = path.replace(/^\/+/, '');
+    return `${this.assetBase}/${normalized}`;
+  }
+
+  private groupDamagesByReturnImage(detail: InspectionDetail): DamageResult[][] {
+    if (!detail.return_images.length) {
+      return [];
+    }
+    const indexById = new Map<number, number>();
+    detail.return_images.forEach((img, idx) => indexById.set(img.id, idx));
+    const grouped: DamageResult[][] = detail.return_images.map(() => []);
+    for (const damage of detail.damages ?? []) {
+      const targetIdx = indexById.get((damage as any).image_id);
+      if (targetIdx === undefined) continue;
+      grouped[targetIdx].push(damage);
+    }
+    return grouped;
   }
 }
 

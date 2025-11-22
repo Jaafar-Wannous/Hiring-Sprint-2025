@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 from typing import Any
 
 from model_loader import get_model
@@ -19,6 +20,11 @@ def _json_safe(value: Any):
     return value
 
 
+CONF_THRESHOLD = float(os.getenv("YOLO_CONF", "0.25"))
+IOU_THRESHOLD = float(os.getenv("YOLO_IOU", "0.5"))
+MAX_DET = int(os.getenv("YOLO_MAX_DET", "60"))
+
+
 def analyze_image_bytes(image_bytes: bytes):
     """
     Decode the provided bytes, run YOLOv8 inference and return normalized detections.
@@ -29,12 +35,12 @@ def analyze_image_bytes(image_bytes: bytes):
         raise ValueError("Unable to decode image bytes")
 
     model = get_model()
-    # Use stricter thresholds to avoid duplicate boxes on the same damage spot.
+    # Allow thresholds to be tuned via env vars; lower conf improves recall for subtle damages.
     results = model.predict(
         source=img,
-        conf=0.5,
-        iou=0.5,
-        max_det=40,
+        conf=CONF_THRESHOLD,
+        iou=IOU_THRESHOLD,
+        max_det=MAX_DET,
         save=False,
         verbose=False,
     )

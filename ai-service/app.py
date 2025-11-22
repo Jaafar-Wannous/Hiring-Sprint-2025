@@ -8,6 +8,7 @@ import os
 import analyzer
 import model_loader
 import utils
+import compare_damage
 
 app = FastAPI(title="Vehicle Damage Detection Service")
 SAVE_DEBUG_IMAGES = os.getenv("SAVE_DEBUG_IMAGES", "false").lower() in {"1", "true", "yes"}
@@ -94,3 +95,31 @@ async def analyze_single_image(request: Request, file: UploadFile = File(None)):
 
     detections = await _run_inference(image_bytes, filename)
     return JSONResponse(content=detections)
+
+
+@app.post("/compare-pair")
+async def compare_pickup_return(
+    pickup: UploadFile = File(..., description="Pickup/before image"),
+    return_image: UploadFile = File(..., description="Return/after image"),
+    iou_threshold: float = 0.3,
+):
+    """
+    Compare pickup vs return images:
+    - CLIP similarity score (how similar the two shots are).
+    - YOLO detections for each image.
+    - Damages in the return image that were not present in the pickup image (by class + IoU).
+    """
+    pickup_bytes = await pickup.read()
+    return_bytes = await return_image.read()
+
+    if not pickup_bytes or not return_bytes:
+        raise HTTPException(status_code=400, detail="Both pickup and return images are required")
+
+    try:
+        result = compare_damage.analyze_pickup_return(
+            pickup_bytes, return_bytes, iou_threshold=iou_threshold, compute_similarity=True
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Comparison failed: {exc}") from exc
+
+    return JSONResponse(content=result)
